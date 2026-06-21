@@ -1,35 +1,38 @@
-import { useState } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
+import type { WorkoutRecord } from '../types';
 import './WorkoutTracker.css';
 
 // начальные данные для демонстрации
-const initialData = [
+const initialData: WorkoutRecord[] = [
   { date: '20.07.2019', km: 5.7 },
   { date: '19.07.2019', km: 14.2 },
   { date: '18.07.2019', km: 3.4 },
 ];
 
 // преобразует дату из формата дд.мм.гггг в объект Date для сортировки
-function parseDate(dateStr) {
+function parseDate(dateStr: string): Date {
   const [day, month, year] = dateStr.split('.');
   return new Date(`${year}-${month}-${day}`);
 }
 
 // сортирует записи по дате — от новой к старой
-function sortByDate(records) {
-  return [...records].sort((a, b) => parseDate(b.date) - parseDate(a.date));
+function sortByDate(records: WorkoutRecord[]): WorkoutRecord[] {
+  return [...records].sort(
+    (a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime(),
+  );
 }
 
 // компонент учёта тренировок
 export default function WorkoutTracker() {
-  const [records, setRecords] = useState(initialData);
+  const [records, setRecords] = useState<WorkoutRecord[]>(initialData);
   const [dateInput, setDateInput] = useState('');
   const [kmInput, setKmInput] = useState('');
 
   // режим редактирования: храним дату редактируемой записи
-  const [editingDate, setEditingDate] = useState(null);
+  const [editingDate, setEditingDate] = useState<string | null>(null);
 
   // добавляем или обновляем запись при сабмите формы
-  function handleSubmit(e) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     const km = parseFloat(kmInput);
@@ -37,23 +40,23 @@ export default function WorkoutTracker() {
 
     if (editingDate) {
       // при редактировании заменяем старую запись новой
-      setRecords(prev =>
+      setRecords((prev) =>
         sortByDate(
-          prev.map(r =>
-            r.date === editingDate ? { date: dateInput, km } : r
-          )
-        )
+          prev.map((r) =>
+            r.date === editingDate ? { date: dateInput, km } : r,
+          ),
+        ),
       );
       setEditingDate(null);
     } else {
       // при добавлении — суммируем если дата уже есть
-      setRecords(prev => {
-        const exists = prev.find(r => r.date === dateInput);
+      setRecords((prev) => {
+        const exists = prev.find((r) => r.date === dateInput);
         const updated = exists
-          ? prev.map(r =>
+          ? prev.map((r) =>
               r.date === dateInput
                 ? { ...r, km: parseFloat((r.km + km).toFixed(1)) }
-                : r
+                : r,
             )
           : [...prev, { date: dateInput, km }];
         return sortByDate(updated);
@@ -66,7 +69,7 @@ export default function WorkoutTracker() {
   }
 
   // загружаем данные записи в форму для редактирования
-  function handleEdit(record) {
+  function handleEdit(record: WorkoutRecord) {
     setDateInput(record.date);
     setKmInput(String(record.km));
     setEditingDate(record.date);
@@ -80,8 +83,16 @@ export default function WorkoutTracker() {
   }
 
   // удаляем строку по дате
-  function handleDelete(date) {
-    setRecords(prev => prev.filter(r => r.date !== date));
+  function handleDelete(date: string) {
+    setRecords((prev) => prev.filter((r) => r.date !== date));
+  }
+
+  function handleDateChange(e: ChangeEvent<HTMLInputElement>) {
+    setDateInput(e.target.value);
+  }
+
+  function handleKmChange(e: ChangeEvent<HTMLInputElement>) {
+    setKmInput(e.target.value);
   }
 
   return (
@@ -95,7 +106,7 @@ export default function WorkoutTracker() {
               type="text"
               placeholder="20.07.2019"
               value={dateInput}
-              onChange={e => setDateInput(e.target.value)}
+              onChange={handleDateChange}
               required
             />
           </div>
@@ -108,13 +119,15 @@ export default function WorkoutTracker() {
               step="0.1"
               min="0"
               value={kmInput}
-              onChange={e => setKmInput(e.target.value)}
+              onChange={handleKmChange}
               required
             />
           </div>
 
           <div className="form-actions">
-            <button type="submit" className="btn-ok">OK</button>
+            <button type="submit" className="btn-ok">
+              OK
+            </button>
             {/* кнопка отмены появляется только в режиме редактирования */}
             {editingDate && (
               <button
@@ -141,7 +154,7 @@ export default function WorkoutTracker() {
         {records.length === 0 ? (
           <div className="empty-state">Нет данных о тренировках</div>
         ) : (
-          records.map(record => (
+          records.map((record) => (
             <div
               key={record.date}
               className={`table-row${editingDate === record.date ? ' editing' : ''}`}
